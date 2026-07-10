@@ -1,48 +1,43 @@
-# api-token-factory
+# API Key Factory
 
-This template should help get you started developing with Vue 3 in Vite.
+Aplicación Vue 3 para generar API keys de forma local, segura e interactiva.
 
-## Recommended IDE Setup
+## Funcionalidades
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Selección de complejidad: simple, estándar y avanzada.
+- Longitud configurable entre 16 y 128 caracteres aleatorios.
+- Prefijo opcional personalizable.
+- Generación criptográficamente segura con `crypto.getRandomValues`.
+- Mostrar u ocultar la clave generada.
+- Copiar al portapapeles.
+- Descargar la API key en un archivo `.txt`.
+- Notificaciones con `vue-sonner`.
+- Iconos con la librería oficial de Lucide para Vue.
+- Diseño responsive basado en la paleta azul, negro, gris y blanco del branding compartido.
 
-## Recommended Browser Setup
+## Instalación
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+El proyecto se abrirá normalmente en `http://localhost:5173`.
 
-```sh
+## Verificaciones
+
+```bash
+npm run type-check
+npm run lint
 npm run build
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+## Dependencias agregadas
 
-```sh
-npm run lint
+```bash
+npm install @lucide/vue vue-sonner
 ```
+
+## Seguridad
+
+La aplicación genera las claves únicamente en el navegador. No realiza peticiones a un backend ni almacena las API keys generadas.
