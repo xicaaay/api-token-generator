@@ -1,25 +1,23 @@
-export type ComplexityLevel = 'simple' | 'standard' | 'advanced'
+export type CharacterSetId = 'uppercase' | 'lowercase' | 'numbers' | 'symbols'
 
-export interface ComplexityOption {
-  id: ComplexityLevel
+export interface CharacterSetOption {
+  id: CharacterSetId
   label: string
-  description: string
+  example: string
   characters: string
 }
 
 export interface ApiKeyOptions {
-  prefix: string
   length: number
-  complexity: ComplexityLevel
+  characterSets: CharacterSetId[]
 }
 
 export interface GeneratedApiKey {
   id: string
   value: string
-  prefix: string
-  randomLength: number
-  totalLength: number
-  complexity: ComplexityLevel
+  length: number
+  characterSets: CharacterSetId[]
+  characterPoolSize: number
   entropy: number
   createdAt: Date
 }

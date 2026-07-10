@@ -1,109 +1,101 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   Check,
-  CircleDot,
-  Clock3,
   Copy,
   Download,
   Eye,
   EyeOff,
-  KeySquare,
-  LockKeyhole,
-  Ruler,
+  KeyRound,
+  Minus,
+  Plus,
+  RefreshCw,
   ShieldCheck,
-  Sparkles,
-  Tag,
-  WandSparkles,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 
-import type { ComplexityLevel, GeneratedApiKey } from '@/types/api-key'
+import type { CharacterSetId, GeneratedApiKey } from '@/types/api-key'
 import {
-  COMPLEXITY_OPTIONS,
+  CHARACTER_SET_OPTIONS,
   generateApiKey,
   getDownloadFilename,
-  sanitizePrefix,
 } from '@/utils/api-key'
 
-const MIN_LENGTH = 16
+const MIN_LENGTH = 8
 const MAX_LENGTH = 128
 
-const complexityIcons: Record<ComplexityLevel, Component> = {
-  simple: CircleDot,
-  standard: ShieldCheck,
-  advanced: Sparkles,
-}
-
-const prefix = ref('ak_live')
-const length = ref(48)
-const complexity = ref<ComplexityLevel>('standard')
+const length = ref(32)
+const enabledCharacterSets = ref<Record<CharacterSetId, boolean>>({
+  uppercase: true,
+  lowercase: true,
+  numbers: true,
+  symbols: false,
+})
 const generatedKey = ref<GeneratedApiKey | null>(null)
 const isVisible = ref(true)
 
-const selectedComplexity = computed(() => {
-  return COMPLEXITY_OPTIONS.find((option) => option.id === complexity.value)
+const selectedCharacterSets = computed<CharacterSetId[]>(() => {
+  return CHARACTER_SET_OPTIONS.filter((option) => enabledCharacterSets.value[option.id]).map(
+    (option) => option.id,
+  )
 })
 
 const displayedKey = computed(() => {
-  const key = generatedKey.value?.value
-
-  if (!key) {
-    return ''
-  }
-
-  if (isVisible.value) {
-    return key
-  }
-
-  const visibleEnding = key.slice(-6)
-  const hiddenLength = Math.max(key.length - visibleEnding.length, 12)
-
-  return `${'•'.repeat(hiddenLength)}${visibleEnding}`
+  const key = generatedKey.value?.value ?? ''
+  return isVisible.value ? key : '•'.repeat(key.length)
 })
 
 const strengthLabel = computed(() => {
   const entropy = generatedKey.value?.entropy ?? 0
 
-  if (entropy >= 256) {
-    return 'Muy alta'
+  if (entropy >= 180) {
+    return 'Muy fuerte'
   }
 
-  if (entropy >= 160) {
-    return 'Alta'
+  if (entropy >= 100) {
+    return 'Fuerte'
   }
 
-  return 'Sólida'
+  if (entropy >= 60) {
+    return 'Buena'
+  }
+
+  return 'Básica'
 })
 
-const lengthProgress = computed(() => {
-  return ((length.value - MIN_LENGTH) / (MAX_LENGTH - MIN_LENGTH)) * 100
-})
-
-const strengthPercentage = computed(() => {
-  const entropy = generatedKey.value?.entropy ?? 0
-  return Math.min(Math.round((entropy / 300) * 100), 100)
-})
-
-function handlePrefixInput(event: Event): void {
-  const target = event.target as HTMLInputElement
-  prefix.value = sanitizePrefix(target.value)
+function clampLength(): void {
+  const parsedLength = Number(length.value)
+  length.value = Math.min(MAX_LENGTH, Math.max(MIN_LENGTH, Math.round(parsedLength || MIN_LENGTH)))
 }
 
-function selectComplexity(value: ComplexityLevel): void {
-  complexity.value = value
+function adjustLength(amount: number): void {
+  length.value = Math.min(MAX_LENGTH, Math.max(MIN_LENGTH, length.value + amount))
 }
 
-function createKey(): void {
+function toggleCharacterSet(id: CharacterSetId): void {
+  const isEnabled = enabledCharacterSets.value[id]
+
+  if (isEnabled && selectedCharacterSets.value.length === 1) {
+    toast.error('Selecciona al menos un tipo de carácter')
+    return
+  }
+
+  enabledCharacterSets.value[id] = !isEnabled
+}
+
+function createKey(showNotification = true): void {
+  clampLength()
+
   try {
     generatedKey.value = generateApiKey({
-      prefix: prefix.value,
       length: length.value,
-      complexity: complexity.value,
+      characterSets: selectedCharacterSets.value,
     })
     isVisible.value = true
-    toast.success('API key generada correctamente')
+
+    if (showNotification) {
+      toast.success('Nueva API key generada')
+    }
   } catch {
     toast.error('No fue posible generar la API key')
   }
@@ -119,7 +111,7 @@ async function copyKey(): Promise<void> {
 
   try {
     await navigator.clipboard.writeText(key)
-    toast.success('API key copiada al portapapeles')
+    toast.success('API key copiada')
   } catch {
     const textarea = document.createElement('textarea')
     textarea.value = key
@@ -132,11 +124,10 @@ async function copyKey(): Promise<void> {
     textarea.remove()
 
     if (copied) {
-      toast.success('API key copiada al portapapeles')
-      return
+      toast.success('API key copiada')
+    } else {
+      toast.error('No fue posible copiarla')
     }
-
-    toast.error('No fue posible copiar la API key')
   }
 }
 
@@ -148,20 +139,27 @@ function downloadKey(): void {
     return
   }
 
-  const details = [
-    'API KEY FACTORY',
-    '================',
+  const activeOptions = CHARACTER_SET_OPTIONS.filter((option) =>
+    key.characterSets.includes(option.id),
+  )
+    .map((option) => option.label)
+    .join(', ')
+
+  const content = [
+    'API KEY',
+    '=======',
     '',
-    `API key: ${key.value}`,
-    `Complejidad: ${selectedComplexity.value?.label ?? key.complexity}`,
-    `Longitud aleatoria: ${key.randomLength} caracteres`,
+    key.value,
+    '',
+    `Longitud: ${key.length} caracteres`,
+    `Incluye: ${activeOptions}`,
     `Entropía estimada: ${key.entropy} bits`,
     `Generada: ${key.createdAt.toLocaleString('es-GT')}`,
     '',
-    'Guarda este archivo en un lugar seguro y evita compartirlo.',
+    'Guarda esta clave en un lugar seguro.',
   ].join('\n')
 
-  const blob = new Blob([details], { type: 'text/plain;charset=utf-8' })
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
   const objectUrl = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
 
@@ -172,122 +170,130 @@ function downloadKey(): void {
   anchor.remove()
   URL.revokeObjectURL(objectUrl)
 
-  toast.success('Archivo descargado')
+  toast.success('API key descargada')
 }
+
+onMounted(() => createKey(false))
 </script>
 
 <template>
-  <section class="generator-card" aria-labelledby="generator-title">
-    <div class="settings-panel">
-      <div class="panel-heading">
-        <span class="step-label">CONFIGURACIÓN</span>
-        <h2 id="generator-title">Diseña tu API key</h2>
-        <p>Selecciona el nivel de complejidad y la longitud que necesitas.</p>
+  <section class="generator" aria-labelledby="generator-title">
+    <header class="generator-heading">
+      <div>
+        <span class="eyebrow">API KEY GENERATOR</span>
+        <h1 id="generator-title">Genera una clave segura.</h1>
+        <p>Elige la longitud y los caracteres. Todo se genera en tu navegador.</p>
       </div>
 
-      <div class="control-group">
-        <div class="label-row">
-          <label>Complejidad</label>
-          <span>{{ selectedComplexity?.label }}</span>
-        </div>
+      <span class="local-pill">
+        <ShieldCheck />
+        Local
+      </span>
+    </header>
 
-        <div class="complexity-grid" role="radiogroup" aria-label="Complejidad de la API key">
-          <button
-            v-for="option in COMPLEXITY_OPTIONS"
-            :key="option.id"
-            type="button"
-            class="complexity-option"
-            :class="{ active: complexity === option.id }"
-            :aria-checked="complexity === option.id"
-            role="radio"
-            @click="selectComplexity(option.id)"
-          >
-            <span class="option-icon">
-              <component :is="complexityIcons[option.id]" />
-            </span>
+    <div class="generator-grid">
+      <div class="controls-panel">
+        <div class="control-block">
+          <div class="control-heading">
+            <div>
+              <label for="key-length">Longitud</label>
+              <span>Entre {{ MIN_LENGTH }} y {{ MAX_LENGTH }} caracteres</span>
+            </div>
 
-            <span class="option-copy">
-              <strong>{{ option.label }}</strong>
-              <small>{{ option.description }}</small>
-            </span>
+            <div class="length-stepper">
+              <button
+                type="button"
+                aria-label="Reducir longitud"
+                :disabled="length <= MIN_LENGTH"
+                @click="adjustLength(-1)"
+              >
+                <Minus />
+              </button>
 
-            <span class="option-check" aria-hidden="true">
-              <Check v-if="complexity === option.id" />
-            </span>
-          </button>
-        </div>
-      </div>
+              <input
+                id="key-length"
+                v-model.number="length"
+                type="number"
+                inputmode="numeric"
+                :min="MIN_LENGTH"
+                :max="MAX_LENGTH"
+                aria-label="Cantidad de caracteres"
+                @change="clampLength"
+              />
 
-      <div class="control-group">
-        <div class="label-row">
-          <label for="key-length">Longitud segura</label>
-          <output for="key-length">{{ length }} caracteres</output>
-        </div>
+              <button
+                type="button"
+                aria-label="Aumentar longitud"
+                :disabled="length >= MAX_LENGTH"
+                @click="adjustLength(1)"
+              >
+                <Plus />
+              </button>
+            </div>
+          </div>
 
-        <input
-          id="key-length"
-          v-model.number="length"
-          class="length-range"
-          type="range"
-          :min="MIN_LENGTH"
-          :max="MAX_LENGTH"
-          step="8"
-          :style="{ '--range-progress': `${lengthProgress}%` }"
-        />
-
-        <div class="range-labels" aria-hidden="true">
-          <span>{{ MIN_LENGTH }}</span>
-          <span>{{ MAX_LENGTH }}</span>
-        </div>
-      </div>
-
-      <div class="control-group">
-        <div class="label-row">
-          <label for="key-prefix">Prefijo opcional</label>
-          <span>Máx. 18 caracteres</span>
-        </div>
-
-        <div class="prefix-input">
-          <Tag />
           <input
-            id="key-prefix"
-            :value="prefix"
-            type="text"
-            maxlength="18"
-            placeholder="ak_live"
-            autocomplete="off"
-            spellcheck="false"
-            @input="handlePrefixInput"
+            v-model.number="length"
+            class="length-range"
+            type="range"
+            :min="MIN_LENGTH"
+            :max="MAX_LENGTH"
+            aria-label="Longitud de la API key"
           />
         </div>
-      </div>
 
-      <button type="button" class="generate-button" @click="createKey">
-        <WandSparkles />
-        {{ generatedKey ? 'Generar una nueva key' : 'Generar API key' }}
-      </button>
-    </div>
+        <div class="control-block">
+          <div class="control-heading compact">
+            <div>
+              <span class="control-label">Caracteres</span>
+              <span>Selecciona al menos una opción</span>
+            </div>
+          </div>
 
-    <div class="result-panel">
-      <div class="result-heading">
-        <div>
-          <span class="step-label">RESULTADO</span>
-          <h2>Tu clave segura</h2>
+          <div class="character-grid">
+            <button
+              v-for="option in CHARACTER_SET_OPTIONS"
+              :key="option.id"
+              type="button"
+              class="character-option"
+              :class="{ active: enabledCharacterSets[option.id] }"
+              :aria-pressed="enabledCharacterSets[option.id]"
+              @click="toggleCharacterSet(option.id)"
+            >
+              <span class="checkbox" aria-hidden="true">
+                <Check v-if="enabledCharacterSets[option.id]" />
+              </span>
+
+              <span class="option-copy">
+                <strong>{{ option.label }}</strong>
+                <small>{{ option.example }}</small>
+              </span>
+            </button>
+          </div>
         </div>
 
-        <span v-if="generatedKey" class="strength-badge">
-          <ShieldCheck />
-          {{ strengthLabel }}
-        </span>
+        <button type="button" class="generate-button" @click="createKey()">
+          <RefreshCw />
+          Generar nueva clave
+        </button>
       </div>
 
-      <div v-if="generatedKey" class="generated-result">
+      <div class="result-panel">
+        <div class="result-header">
+          <span>Tu API key</span>
+          <span v-if="generatedKey" class="strength">
+            <span class="strength-dot"></span>
+            {{ strengthLabel }} · {{ generatedKey.entropy }} bits
+          </span>
+        </div>
+
         <div class="key-output">
+          <KeyRound class="key-icon" aria-hidden="true" />
           <code>{{ displayedKey }}</code>
 
           <button
             type="button"
-            class="icon-button"
+            class="visibility-button"
             :aria-label="isVisible ? 'Ocultar API key' : 'Mostrar API key'"
             @click="isVisible = !isVisible"
           >
@@ -296,576 +302,508 @@ function downloadKey(): void {
           </button>
         </div>
 
-        <div class="strength-block">
-          <div class="strength-copy">
-            <span>Entropía estimada</span>
-            <strong>{{ generatedKey.entropy }} bits</strong>
-          </div>
-
-          <div class="strength-track" aria-hidden="true">
-            <span :style="{ width: `${strengthPercentage}%` }"></span>
-          </div>
-        </div>
-
-        <div class="key-metadata">
-          <span>
-            <Ruler />
-            {{ generatedKey.totalLength }} caracteres totales
-          </span>
-          <span>
-            <Clock3 />
-            Generada ahora
-          </span>
+        <div class="result-meta">
+          <span>{{ generatedKey?.length ?? length }} caracteres</span>
+          <span>{{ selectedCharacterSets.length }} tipos seleccionados</span>
         </div>
 
         <div class="result-actions">
-          <button type="button" class="primary-action" @click="copyKey">
+          <button type="button" class="copy-button" @click="copyKey">
             <Copy />
             Copiar
           </button>
 
-          <button type="button" class="secondary-action" @click="downloadKey">
+          <button type="button" class="download-button" @click="downloadKey">
             <Download />
-            Descargar .txt
+            Descargar
           </button>
         </div>
 
-        <div class="security-note">
-          <LockKeyhole />
-          <p>
-            Esta clave se genera únicamente en tu navegador. No se guarda ni se envía a ningún
-            servidor.
-          </p>
-        </div>
-      </div>
-
-      <div v-else class="empty-result">
-        <span class="empty-icon">
-          <KeySquare />
-        </span>
-        <h3>Aún no hay una clave</h3>
-        <p>Configura las opciones y genera una API key para verla aquí.</p>
+        <p class="privacy-note">
+          No guardamos ni enviamos esta clave. Cópiala antes de cerrar la página.
+        </p>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.generator-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.03fr) minmax(0, 0.97fr);
+.generator {
   border: 1px solid var(--color-border);
-  border-radius: 28px;
-  overflow: hidden;
-  background: rgba(16, 27, 38, 0.74);
+  border-radius: 24px;
+  background: var(--color-surface);
   box-shadow: var(--shadow-card);
-  backdrop-filter: blur(22px);
+  overflow: hidden;
 }
 
-.settings-panel,
-.result-panel {
-  padding: clamp(28px, 4vw, 48px);
-}
-
-.settings-panel {
-  border-right: 1px solid var(--color-border);
-}
-
-.result-panel {
-  position: relative;
-  min-height: 620px;
+.generator-heading {
   display: flex;
-  flex-direction: column;
-  background:
-    radial-gradient(circle at 85% 10%, rgba(68, 166, 241, 0.13), transparent 35%),
-    linear-gradient(145deg, rgba(9, 14, 20, 0.64), rgba(20, 34, 47, 0.82));
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(28px, 5vw, 48px);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.panel-heading,
-.result-heading {
-  margin-bottom: 34px;
+.eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--color-muted);
+  font-size: 0.67rem;
+  font-weight: 750;
+  letter-spacing: 0.16em;
 }
 
-.panel-heading h2,
-.result-heading h2 {
-  margin: 10px 0 9px;
-  color: var(--color-text-primary);
-  font-size: clamp(1.55rem, 2.4vw, 2rem);
-  font-weight: 760;
-  letter-spacing: -0.045em;
-}
-
-.panel-heading p {
-  max-width: 480px;
+.generator-heading h1 {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.generator-heading p {
+  max-width: 570px;
+  margin: 18px 0 0;
+  color: var(--color-muted);
+  font-size: 0.92rem;
   line-height: 1.65;
 }
 
-.step-label {
-  color: var(--color-blue-light);
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.19em;
+.local-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
 }
 
-.control-group {
-  margin-bottom: 29px;
+.local-pill :deep(svg) {
+  width: 14px;
+  height: 14px;
 }
 
-.label-row {
+.generator-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.controls-panel,
+.result-panel {
+  padding: clamp(26px, 4vw, 40px);
+}
+
+.controls-panel {
+  border-right: 1px solid var(--color-border);
+}
+
+.control-block + .control-block {
+  margin-top: 30px;
+}
+
+.control-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  margin-bottom: 18px;
+}
+
+.control-heading.compact {
   margin-bottom: 12px;
 }
 
-.label-row label {
-  color: var(--color-text-primary);
-  font-size: 0.88rem;
+.control-heading > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.control-heading label,
+.control-label {
+  color: var(--color-text);
+  font-size: 0.85rem;
   font-weight: 680;
 }
 
-.label-row span,
-.label-row output {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
+.control-heading span:not(.control-label) {
+  color: var(--color-muted);
+  font-size: 0.7rem;
 }
 
-.complexity-grid {
+.length-stepper {
+  flex: 0 0 auto;
   display: grid;
-  gap: 9px;
-}
-
-.complexity-option {
-  width: 100%;
-  min-height: 76px;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 26px;
+  grid-template-columns: 34px 58px 34px;
   align-items: center;
-  gap: 13px;
-  padding: 13px 14px;
+  height: 36px;
   border: 1px solid var(--color-border);
-  border-radius: 15px;
-  color: inherit;
-  background: rgba(255, 255, 255, 0.018);
-  text-align: left;
-  cursor: pointer;
-  transition:
-    border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-background);
 }
 
-.complexity-option:hover {
-  border-color: rgba(68, 166, 241, 0.4);
-  transform: translateY(-1px);
+.length-stepper button,
+.length-stepper input {
+  height: 100%;
+  border: 0;
+  color: var(--color-text);
+  background: transparent;
 }
 
-.complexity-option.active {
-  border-color: rgba(68, 166, 241, 0.68);
-  background: linear-gradient(90deg, rgba(68, 70, 241, 0.12), rgba(68, 166, 241, 0.055));
-}
-
-.option-icon,
-.option-check {
+.length-stepper button {
   display: grid;
   place-items: center;
+  cursor: pointer;
 }
 
-.option-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 11px;
-  color: var(--color-blue-light);
-  background: rgba(68, 166, 241, 0.09);
+.length-stepper button:hover:not(:disabled) {
+  background: var(--color-surface-hover);
 }
 
-.option-icon :deep(svg) {
-  width: 19px;
-  height: 19px;
+.length-stepper button :deep(svg) {
+  width: 14px;
+  height: 14px;
 }
 
-.option-copy {
-  display: grid;
-  gap: 3px;
+.length-stepper input {
+  width: 100%;
+  border-right: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  outline: none;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 650;
+  appearance: textfield;
 }
 
-.option-copy strong {
-  color: var(--color-text-primary);
-  font-size: 0.88rem;
-  font-weight: 680;
-}
-
-.option-copy small {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-
-.option-check {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: #07131e;
-  background: var(--color-blue-light);
-}
-
-.option-check :deep(svg) {
-  width: 13px;
-  height: 13px;
-  stroke-width: 3;
+.length-stepper input::-webkit-inner-spin-button,
+.length-stepper input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 .length-range {
   width: 100%;
-  height: 6px;
+  height: 4px;
   appearance: none;
   border-radius: 999px;
-  background: linear-gradient(
-    to right,
-    var(--color-blue-primary) 0%,
-    var(--color-blue-light) var(--range-progress, 30%),
-    var(--color-surface-soft) var(--range-progress, 30%),
-    var(--color-surface-soft) 100%
-  );
+  background: var(--color-border-strong);
   cursor: pointer;
-  accent-color: var(--color-blue-light);
+  accent-color: var(--color-inverse);
 }
 
 .length-range::-webkit-slider-thumb {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   appearance: none;
-  border: 4px solid #e8f4ff;
+  border: 4px solid var(--color-surface);
   border-radius: 50%;
-  background: var(--color-blue-primary);
-  box-shadow: 0 0 0 5px rgba(68, 166, 241, 0.12);
+  background: var(--color-inverse);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
 }
 
 .length-range::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
-  border: 4px solid #e8f4ff;
+  width: 11px;
+  height: 11px;
+  border: 4px solid var(--color-surface);
   border-radius: 50%;
-  background: var(--color-blue-primary);
-  box-shadow: 0 0 0 5px rgba(68, 166, 241, 0.12);
+  background: var(--color-inverse);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
 }
 
-.range-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 9px;
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
+.character-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
 
-.prefix-input {
+.character-option {
+  min-height: 62px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 14px;
+  gap: 11px;
+  padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 13px;
-  background: rgba(4, 9, 14, 0.45);
-  transition: border-color 180ms ease;
+  color: var(--color-text);
+  background: var(--color-background);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
 }
 
-.prefix-input:focus-within {
-  border-color: rgba(68, 166, 241, 0.72);
-  box-shadow: 0 0 0 4px rgba(68, 166, 241, 0.07);
+.character-option:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
 }
 
-.prefix-input :deep(svg) {
+.character-option.active {
+  border-color: var(--color-text);
+}
+
+.checkbox {
   flex: 0 0 auto;
-  color: var(--color-text-muted);
-}
-
-.prefix-input input {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  outline: 0;
-  color: var(--color-text-primary);
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 6px;
+  color: var(--color-inverse-text);
   background: transparent;
-  font: inherit;
-  font-size: 0.87rem;
 }
 
-.prefix-input input::placeholder {
-  color: #607080;
+.character-option.active .checkbox {
+  border-color: var(--color-inverse);
+  background: var(--color-inverse);
+}
+
+.checkbox :deep(svg) {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+.option-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.option-copy strong {
+  font-size: 0.77rem;
+  font-weight: 650;
+}
+
+.option-copy small {
+  color: var(--color-muted);
+  font-size: 0.66rem;
 }
 
 .generate-button,
-.primary-action,
-.secondary-action {
+.copy-button,
+.download-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  border-radius: 13px;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 12px;
   font: inherit;
-  font-weight: 720;
+  font-size: 0.78rem;
+  font-weight: 680;
   cursor: pointer;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    border-color 180ms ease;
+    transform 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
 }
 
 .generate-button {
   width: 100%;
-  min-height: 51px;
-  border: 0;
-  color: white;
-  background: linear-gradient(105deg, var(--color-blue-primary), var(--color-blue-light));
-  box-shadow: 0 14px 35px rgba(29, 106, 230, 0.22);
+  margin-top: 28px;
+  border: 1px solid var(--color-inverse);
+  color: var(--color-inverse-text);
+  background: var(--color-inverse);
 }
 
 .generate-button:hover,
-.primary-action:hover,
-.secondary-action:hover {
-  transform: translateY(-2px);
+.copy-button:hover,
+.download-button:hover {
+  transform: translateY(-1px);
 }
 
-.result-heading {
+.generate-button :deep(svg),
+.copy-button :deep(svg),
+.download-button :deep(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+.result-panel {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+  flex-direction: column;
+  background: var(--color-background);
 }
 
-.strength-badge {
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 680;
+}
+
+.strength {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 10px;
-  border: 1px solid rgba(68, 166, 241, 0.23);
-  border-radius: 999px;
-  color: #b8dcf8;
-  background: rgba(68, 166, 241, 0.08);
-  font-size: 0.7rem;
-  font-weight: 700;
+  gap: 6px;
+  color: var(--color-muted);
+  font-size: 0.64rem;
+  font-weight: 550;
 }
 
-.generated-result {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
+.strength-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text);
 }
 
 .key-output {
-  min-height: 142px;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 22px;
-  border: 1px solid rgba(68, 166, 241, 0.22);
-  border-radius: 18px;
-  background: rgba(2, 7, 12, 0.64);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  min-height: 184px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 34px;
+  align-items: start;
+  gap: 12px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+}
+
+.key-icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  color: var(--color-muted);
 }
 
 .key-output code {
-  flex: 1;
   min-width: 0;
-  color: #dff2ff;
+  color: var(--color-text);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   line-height: 1.75;
   overflow-wrap: anywhere;
   word-break: break-all;
 }
 
-.icon-button {
-  flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+.visibility-button {
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: var(--color-text-secondary);
-  background: rgba(255, 255, 255, 0.035);
+  color: var(--color-muted);
+  background: var(--color-background);
   cursor: pointer;
 }
 
-.strength-block {
-  margin: 25px 0 18px;
+.visibility-button:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-strong);
 }
 
-.strength-copy {
+.visibility-button :deep(svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.result-meta {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10px;
-  color: var(--color-text-muted);
-  font-size: 0.73rem;
-}
-
-.strength-copy strong {
-  color: var(--color-text-secondary);
-  font-weight: 700;
-}
-
-.strength-track {
-  height: 5px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.strength-track span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-blue-primary), var(--color-blue-light));
-  transition: width 360ms ease;
-}
-
-.key-metadata {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-}
-
-.key-metadata span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  gap: 14px;
+  margin: 12px 2px 0;
+  color: var(--color-muted);
+  font-size: 0.65rem;
 }
 
 .result-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 28px;
-}
-
-.primary-action,
-.secondary-action {
-  min-height: 48px;
-}
-
-.primary-action {
-  border: 0;
-  color: white;
-  background: linear-gradient(105deg, var(--color-blue-primary), #1c8fe2);
-  box-shadow: 0 12px 30px rgba(29, 106, 230, 0.16);
-}
-
-.secondary-action {
-  border: 1px solid var(--color-border-strong);
-  color: var(--color-text-primary);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.security-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 26px;
-  color: var(--color-text-muted);
+  padding-top: 28px;
 }
 
-.security-note :deep(svg) {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  margin-top: 2px;
-  color: var(--color-blue-light);
+.copy-button {
+  border: 1px solid var(--color-inverse);
+  color: var(--color-inverse-text);
+  background: var(--color-inverse);
 }
 
-.security-note p {
-  margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.55;
+.download-button {
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
-.empty-result {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
+.download-button:hover {
+  background: var(--color-surface-hover);
+}
+
+.privacy-note {
+  margin: 15px 0 0;
+  color: var(--color-muted);
+  font-size: 0.64rem;
+  line-height: 1.5;
   text-align: center;
-  padding: 30px;
 }
 
-.empty-icon {
-  width: 72px;
-  height: 72px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 20px;
-  border: 1px solid rgba(68, 166, 241, 0.2);
-  border-radius: 22px;
-  color: var(--color-blue-light);
-  background: linear-gradient(145deg, rgba(68, 70, 241, 0.13), rgba(68, 166, 241, 0.07));
-  box-shadow: 0 20px 50px rgba(11, 72, 160, 0.12);
-}
-
-.empty-icon :deep(svg) {
-  width: 28px;
-  height: 28px;
-}
-
-.empty-result h3 {
-  margin: 0 0 8px;
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  font-weight: 720;
-}
-
-.empty-result p {
-  max-width: 300px;
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  line-height: 1.6;
-}
-
-@media (max-width: 920px) {
-  .generator-card {
+@media (max-width: 760px) {
+  .generator-grid {
     grid-template-columns: 1fr;
   }
 
-  .settings-panel {
+  .controls-panel {
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
 
   .result-panel {
-    min-height: 520px;
+    min-height: 420px;
   }
 }
 
-@media (max-width: 560px) {
-  .settings-panel,
-  .result-panel {
-    padding: 25px 20px;
+@media (max-width: 520px) {
+  .generator {
+    border-radius: 20px;
   }
 
-  .result-panel {
-    min-height: 500px;
+  .generator-heading {
+    flex-direction: column;
+    gap: 18px;
   }
 
-  .result-heading {
+  .local-pill {
+    align-self: flex-start;
+  }
+
+  .control-heading {
     align-items: flex-start;
     flex-direction: column;
   }
 
+  .length-stepper {
+    align-self: stretch;
+    grid-template-columns: 40px 1fr 40px;
+  }
+
+  .character-grid,
   .result-actions {
     grid-template-columns: 1fr;
   }
 
   .key-output {
     min-height: 160px;
-    padding: 18px;
+  }
+
+  .result-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 }
 </style>

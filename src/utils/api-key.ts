@@ -1,97 +1,111 @@
 import type {
   ApiKeyOptions,
-  ComplexityLevel,
-  ComplexityOption,
+  CharacterSetId,
+  CharacterSetOption,
   GeneratedApiKey,
 } from '@/types/api-key'
 
-const SIMPLE_CHARACTERS = 'abcdefghijkmnopqrstuvwxyz23456789'
-const STANDARD_CHARACTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
-const ADVANCED_CHARACTERS = `${STANDARD_CHARACTERS}-._~`
-
-export const COMPLEXITY_OPTIONS: ComplexityOption[] = [
+export const CHARACTER_SET_OPTIONS: CharacterSetOption[] = [
   {
-    id: 'simple',
-    label: 'Simple',
-    description: 'Minúsculas y números sin caracteres ambiguos.',
-    characters: SIMPLE_CHARACTERS,
+    id: 'uppercase',
+    label: 'Mayúsculas',
+    example: 'A–Z',
+    characters: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
   },
   {
-    id: 'standard',
-    label: 'Estándar',
-    description: 'Mayúsculas, minúsculas y números.',
-    characters: STANDARD_CHARACTERS,
+    id: 'lowercase',
+    label: 'Minúsculas',
+    example: 'a–z',
+    characters: 'abcdefghijklmnopqrstuvwxyz',
   },
   {
-    id: 'advanced',
-    label: 'Avanzada',
-    description: 'Agrega símbolos seguros para URLs.',
-    characters: ADVANCED_CHARACTERS,
+    id: 'numbers',
+    label: 'Números',
+    example: '0–9',
+    characters: '0123456789',
+  },
+  {
+    id: 'symbols',
+    label: 'Símbolos',
+    example: '!@#',
+    characters: '!@#$%^&*()-_=+[]{};:,.?',
   },
 ]
 
-export function sanitizePrefix(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '_')
-    .replace(/^_+|_+$/g, '')
-    .slice(0, 18)
-}
+function getOption(id: CharacterSetId): CharacterSetOption {
+  const option = CHARACTER_SET_OPTIONS.find((item) => item.id === id)
 
-function getCharacters(complexity: ComplexityLevel): string {
-  return (
-    COMPLEXITY_OPTIONS.find((option) => option.id === complexity)?.characters ?? STANDARD_CHARACTERS
-  )
-}
-
-function createSecureRandomString(length: number, characters: string): string {
-  const characterCount = characters.length
-  const largestValidByte = Math.floor(256 / characterCount) * characterCount
-  let result = ''
-
-  while (result.length < length) {
-    const remaining = length - result.length
-    const randomBytes = new Uint8Array(Math.max(remaining * 2, 32))
-    crypto.getRandomValues(randomBytes)
-
-    for (const byte of randomBytes) {
-      if (byte >= largestValidByte) {
-        continue
-      }
-
-      result += characters.charAt(byte % characterCount)
-
-      if (result.length === length) {
-        break
-      }
-    }
+  if (!option) {
+    throw new Error(`Unknown character set: ${id}`)
   }
 
-  return result
+  return option
+}
+
+function getSecureRandomIndex(maxExclusive: number): number {
+  if (!Number.isInteger(maxExclusive) || maxExclusive <= 0 || maxExclusive > 256) {
+    throw new Error('Invalid random range')
+  }
+
+  const largestValidByte = Math.floor(256 / maxExclusive) * maxExclusive
+  const randomByte = new Uint8Array(1)
+
+  do {
+    crypto.getRandomValues(randomByte)
+  } while (randomByte[0]! >= largestValidByte)
+
+  return randomByte[0]! % maxExclusive
+}
+
+function getSecureCharacter(characters: string): string {
+  return characters[getSecureRandomIndex(characters.length)] ?? ''
+}
+
+function secureShuffle(values: string[]): string[] {
+  const shuffled = [...values]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = getSecureRandomIndex(index + 1)
+    const currentValue = shuffled[index]!
+    shuffled[index] = shuffled[randomIndex]!
+    shuffled[randomIndex] = currentValue
+  }
+
+  return shuffled
 }
 
 export function generateApiKey(options: ApiKeyOptions): GeneratedApiKey {
-  const prefix = sanitizePrefix(options.prefix)
-  const characters = getCharacters(options.complexity)
-  const randomValue = createSecureRandomString(options.length, characters)
-  const value = prefix ? `${prefix}_${randomValue}` : randomValue
+  const uniqueCharacterSets = [...new Set(options.characterSets)]
+
+  if (uniqueCharacterSets.length === 0) {
+    throw new Error('Select at least one character set')
+  }
+
+  if (options.length < uniqueCharacterSets.length) {
+    throw new Error('Length is shorter than the selected character sets')
+  }
+
+  const selectedOptions = uniqueCharacterSets.map(getOption)
+  const characterPool = selectedOptions.map((option) => option.characters).join('')
+  const requiredCharacters = selectedOptions.map((option) => getSecureCharacter(option.characters))
+  const remainingCharacters = Array.from(
+    { length: options.length - requiredCharacters.length },
+    () => getSecureCharacter(characterPool),
+  )
+  const value = secureShuffle([...requiredCharacters, ...remainingCharacters]).join('')
 
   return {
     id: crypto.randomUUID(),
     value,
-    prefix,
-    randomLength: options.length,
-    totalLength: value.length,
-    complexity: options.complexity,
-    entropy: Math.round(options.length * Math.log2(characters.length)),
+    length: options.length,
+    characterSets: uniqueCharacterSets,
+    characterPoolSize: characterPool.length,
+    entropy: Math.round(options.length * Math.log2(characterPool.length)),
     createdAt: new Date(),
   }
 }
 
 export function getDownloadFilename(apiKey: GeneratedApiKey): string {
   const date = apiKey.createdAt.toISOString().slice(0, 10)
-  const prefix = apiKey.prefix || 'api-key'
-
-  return `${prefix}-${date}.txt`
+  return `api-key-${date}.txt`
 }

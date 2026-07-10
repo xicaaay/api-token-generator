@@ -10,12 +10,18 @@ svg {
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.4;
 }
 
 [data-sonner-toaster] {
-  --normal-bg: #111e29;
-  --normal-border: rgba(160, 186, 207, 0.18);
-  --normal-text: #f1f4f7;
+  --normal-bg: var(--color-surface);
+  --normal-border: var(--color-border);
+  --normal-text: var(--color-text);
+  --success-bg: var(--color-surface);
+  --success-border: var(--color-border);
+  --success-text: var(--color-text);
+  --error-bg: var(--color-surface);
+  --error-border: var(--color-border);
+  --error-text: var(--color-text);
   font-family: inherit;
 }

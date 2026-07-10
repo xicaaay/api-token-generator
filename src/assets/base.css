@@ -1,21 +1,33 @@
 :root {
-  --color-background: #0d1721;
-  --color-surface: #101b26;
-  --color-surface-soft: #26333d;
-  --color-border: rgba(160, 186, 207, 0.14);
-  --color-border-strong: rgba(160, 186, 207, 0.24);
-  --color-text-primary: #f1f4f7;
-  --color-text-secondary: #a8bac9;
-  --color-text-muted: #718493;
-  --color-blue-primary: #4446f1;
-  --color-blue-light: #44a6f1;
-  --color-blue-soft: #84c6ef;
-  --shadow-card: 0 42px 100px rgba(0, 0, 0, 0.28);
-  color-scheme: dark;
+  --color-background: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f4f4f4;
+  --color-text: #0a0a0a;
+  --color-muted: #707070;
+  --color-border: #e7e7e7;
+  --color-border-strong: #cfcfcf;
+  --color-inverse: #0a0a0a;
+  --color-inverse-text: #ffffff;
+  --shadow-card: 0 18px 55px rgba(0, 0, 0, 0.06);
+  color-scheme: light;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme='dark'] {
+  --color-background: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-hover: #191919;
+  --color-text: #f5f5f5;
+  --color-muted: #929292;
+  --color-border: #252525;
+  --color-border-strong: #3a3a3a;
+  --color-inverse: #f5f5f5;
+  --color-inverse-text: #0a0a0a;
+  --shadow-card: 0 20px 70px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
 }
 
 *,
@@ -27,6 +39,7 @@
 html {
   min-width: 320px;
   min-height: 100%;
+  background: var(--color-background);
   scroll-behavior: smooth;
 }
 
@@ -34,11 +47,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  color: var(--color-text-primary);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px), var(--color-background);
-  background-size: 48px 48px;
+  color: var(--color-text);
+  background: var(--color-background);
   font-family:
     Inter,
     ui-sans-serif,
@@ -46,6 +56,9 @@ body {
     BlinkMacSystemFont,
     'Segoe UI',
     sans-serif;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
 }
 
 button,
@@ -56,7 +69,7 @@ input {
 button:focus-visible,
 input:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--color-blue-light);
+  outline: 2px solid var(--color-text);
   outline-offset: 3px;
 }
 
@@ -66,6 +79,6 @@ a {
 }
 
 ::selection {
-  color: white;
-  background: rgba(68, 70, 241, 0.78);
+  color: var(--color-inverse-text);
+  background: var(--color-inverse);
 }

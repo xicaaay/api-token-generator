@@ -1,19 +1,19 @@
-# API Key Factory
+# Keygen
 
-Aplicación Vue 3 para generar API keys de forma local, segura e interactiva.
+Generador minimalista de API keys desarrollado con Vue 3 y TypeScript.
 
 ## Funcionalidades
 
-- Selección de complejidad: simple, estándar y avanzada.
-- Longitud configurable entre 16 y 128 caracteres aleatorios.
-- Prefijo opcional personalizable.
+- Tema claro y oscuro con preferencia persistente.
+- Longitud configurable entre 8 y 128 caracteres.
+- Selección independiente de mayúsculas, minúsculas, números y símbolos.
 - Generación criptográficamente segura con `crypto.getRandomValues`.
+- Cada grupo seleccionado aparece al menos una vez en la clave.
 - Mostrar u ocultar la clave generada.
-- Copiar al portapapeles.
-- Descargar la API key en un archivo `.txt`.
+- Copiar al portapapeles y descargar como archivo `.txt`.
 - Notificaciones con `vue-sonner`.
-- Iconos con la librería oficial de Lucide para Vue.
-- Diseño responsive basado en la paleta azul, negro, gris y blanco del branding compartido.
+- Iconos con Lucide para Vue.
+- Diseño responsive en blanco y negro.
 
 ## Instalación
 
@@ -21,8 +21,6 @@ Aplicación Vue 3 para generar API keys de forma local, segura e interactiva.
 npm install
 npm run dev
 ```
-
-El proyecto se abrirá normalmente en `http://localhost:5173`.
 
 ## Verificaciones
 
@@ -32,12 +30,4 @@ npm run lint
 npm run build
 ```
 
-## Dependencias agregadas
-
-```bash
-npm install @lucide/vue vue-sonner
-```
-
-## Seguridad
-
-La aplicación genera las claves únicamente en el navegador. No realiza peticiones a un backend ni almacena las API keys generadas.
+La generación ocurre únicamente en el navegador. La aplicación no almacena ni envía las claves a ningún servidor.

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { KeyRound } from '@lucide/vue'
+import { KeyRound, Moon, Sun } from '@lucide/vue'
+
+import { useTheme } from '@/composables/useTheme'
+
+const { theme, toggleTheme } = useTheme()
 </script>
 
 <template>
@@ -8,104 +12,91 @@ import { KeyRound } from '@lucide/vue'
       <span class="brand-mark" aria-hidden="true">
         <KeyRound />
       </span>
-
-      <span class="brand-copy">
-        <strong>API KEY</strong>
-        <span>FACTORY</span>
-      </span>
+      <span>API Key Generator X</span>
     </a>
 
-    <div class="local-badge">
-      <span class="status-dot" aria-hidden="true"></span>
-      Generación local
-    </div>
+    <button
+      type="button"
+      class="theme-button"
+      :aria-label="theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+      :title="theme === 'dark' ? 'Tema claro' : 'Tema oscuro'"
+      @click="toggleTheme"
+    >
+      <Sun v-if="theme === 'dark'" />
+      <Moon v-else />
+    </button>
   </header>
 </template>
 
 <style scoped>
 .app-header {
-  width: min(1180px, calc(100% - 40px));
+  width: min(960px, calc(100% - 40px));
+  height: 80px;
   margin: 0 auto;
-  padding: 28px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 13px;
-  color: var(--color-text-primary);
+  gap: 10px;
+  color: var(--color-text);
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   text-decoration: none;
 }
 
-.brand-mark {
-  width: 42px;
-  height: 42px;
+.brand-mark,
+.theme-button {
   display: grid;
   place-items: center;
-  border: 1px solid rgba(68, 166, 241, 0.3);
-  border-radius: 13px;
-  background: linear-gradient(145deg, rgba(68, 70, 241, 0.95), rgba(68, 166, 241, 0.92));
-  box-shadow: 0 12px 30px rgba(22, 112, 255, 0.24);
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--color-inverse-text);
+  background: var(--color-inverse);
 }
 
 .brand-mark :deep(svg) {
-  width: 21px;
-  height: 21px;
+  width: 17px;
+  height: 17px;
 }
 
-.brand-copy {
-  display: grid;
-  line-height: 0.9;
-  letter-spacing: 0.07em;
-}
-
-.brand-copy strong,
-.brand-copy span {
-  font-weight: 800;
-}
-
-.brand-copy span {
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  margin-top: 7px;
-}
-
-.local-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 13px;
+.theme-button {
+  width: 40px;
+  height: 40px;
   border: 1px solid var(--color-border);
-  border-radius: 999px;
-  color: var(--color-text-secondary);
-  background: rgba(16, 27, 38, 0.72);
-  font-size: 0.78rem;
-  font-weight: 650;
-  backdrop-filter: blur(14px);
+  border-radius: 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-blue-light);
-  box-shadow: 0 0 0 5px rgba(68, 166, 241, 0.1);
+.theme-button:hover {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-hover);
+  transform: translateY(-1px);
+}
+
+.theme-button :deep(svg) {
+  width: 17px;
+  height: 17px;
 }
 
 @media (max-width: 560px) {
   .app-header {
-    width: min(100% - 28px, 1180px);
-    padding: 20px 0;
-  }
-
-  .local-badge {
-    padding: 9px;
-    font-size: 0;
+    width: min(100% - 28px, 960px);
+    height: 68px;
   }
 }
 </style>

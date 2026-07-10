@@ -6,10 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Generador local de API keys seguras con longitud y complejidad personalizables."
+      content="Generador minimalista de API keys seguras con longitud y caracteres personalizables."
     />
-    <meta name="theme-color" content="#0d1721" />
-    <title>API Key Factory</title>
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      ;(() => {
+        try {
+          const savedTheme = localStorage.getItem('api-key-theme')
+          const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+          const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : preferredTheme
+          document.documentElement.dataset.theme = theme
+          document.documentElement.style.colorScheme = theme
+        } catch {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
+    <title>API Key Generator X</title>
   </head>
   <body>
     <div id="app"></div>

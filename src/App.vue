@@ -2,9 +2,14 @@
 import { RouterView } from 'vue-router'
 import { Toaster } from 'vue-sonner'
 import 'vue-sonner/style.css'
+
+import { useTheme } from '@/composables/useTheme'
+
+const { theme, initializeTheme } = useTheme()
+initializeTheme()
 </script>
 
 <template>
   <RouterView />
-  <Toaster position="top-right" theme="dark" rich-colors close-button :duration="2800" />
+  <Toaster :theme="theme" position="top-right" close-button :duration="2600" />
 </template>
