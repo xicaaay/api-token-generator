@@ -2,6 +2,8 @@
 
 Generador de API keys y secretos criptográficamente seguros. Funciona 100 % en el navegador: la clave nunca se envía ni se guarda en ningún servidor.
 
+**Demo:** https://api-token-generator.netlify.app
+
 Desarrollado con Vue 3 y TypeScript.
 
 ## Funcionalidades
@@ -18,7 +20,8 @@ Desarrollado con Vue 3 y TypeScript.
 - Indicador de fuerza con la **entropía exacta** en bits.
 - Mostrar u ocultar la clave, copiarla al portapapeles o descargarla como `.txt`.
 - **PWA instalable y sin conexión:** manifest, íconos (incluido el maskable) y service worker. Usarla offline es la mejor prueba de que nada sale del navegador.
-- Guía de formatos y preguntas frecuentes, con datos estructurados (JSON-LD).
+- Diseño minimalista: un solo panel, opciones en chips y preguntas frecuentes plegables.
+- SEO: canonical, Open Graph con imagen, JSON-LD, `robots.txt` y `sitemap.xml`.
 - Tema claro y oscuro (respeta la preferencia del sistema y no parpadea al cargar).
 - Diseño responsive.
 
@@ -63,7 +66,7 @@ src/
 ├─ components/
 │  ├─ ApiKeyGenerator.vue       # Controles, resultado y acciones
 │  ├─ AppHeader.vue             # Marca y cambio de tema
-│  └─ KeyGuide.vue              # Guía de formatos y preguntas frecuentes
+│  └─ KeyGuide.vue              # Preguntas frecuentes
 ├─ composables/useTheme.ts      # Tema claro/oscuro persistente
 ├─ types/api-key.ts
 ├─ utils/
@@ -72,6 +75,9 @@ src/
 │  └─ __tests__/
 └─ views/HomeView.vue
 public/
+├─ _headers                     # Cabeceras de Netlify (sw.js sin caché, /assets inmutable)
+├─ og-image.png
+├─ robots.txt · sitemap.xml
 ├─ manifest.webmanifest
 ├─ sw.js                        # Service worker (uso sin conexión)
 └─ icons/                       # Íconos PWA 192, 512 y maskable
@@ -81,12 +87,11 @@ public/
 
 El service worker se registra solo en producción (`import.meta.env.PROD`). Responde las navegaciones con red primero y, si no hay conexión, con el `index.html` guardado. Los archivos de `/assets/` llevan hash, así que se sirven desde caché. Si haces un cambio incompatible en la caché, sube `VERSION` en `public/sw.js`.
 
-En el hosting conviene servir `/sw.js` con `Cache-Control: no-cache` para que las actualizaciones lleguen enseguida.
+En Netlify, `public/_headers` sirve `/sw.js` sin caché para que las actualizaciones lleguen enseguida.
 
 ## Roadmap
 
 - CLI / paquete npm (`npx keygen --preset jwt`).
-- Imagen Open Graph y URL pública (pendiente del dominio).
 
 ## Privacidad
 

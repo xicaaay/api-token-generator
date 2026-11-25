@@ -1,0 +1,7 @@
+# Netlify: el service worker se revisa en cada visita para recibir actualizaciones.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Archivos con hash de Vite: caché de larga duración.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

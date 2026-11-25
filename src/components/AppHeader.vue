@@ -30,7 +30,7 @@ const { theme, toggleTheme } = useTheme()
 
 <style scoped>
 .app-header {
-  width: min(960px, calc(100% - 40px));
+  width: min(760px, calc(100% - 32px));
   height: 80px;
   margin: 0 auto;
   display: flex;
@@ -95,7 +95,7 @@ const { theme, toggleTheme } = useTheme()
 
 @media (max-width: 560px) {
   .app-header {
-    width: min(100% - 28px, 960px);
+    width: min(100% - 32px, 760px);
     height: 68px;
   }
 }
