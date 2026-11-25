@@ -12,7 +12,7 @@ const { theme, toggleTheme } = useTheme()
       <span class="brand-mark" aria-hidden="true">
         <KeyRound />
       </span>
-      <span>API Key Generator X</span>
+      <span>Keygen</span>
     </a>
 
     <button
