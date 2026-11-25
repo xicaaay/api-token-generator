@@ -1,13 +1,15 @@
 import './assets/main.css'
 
 import { createApp } from 'vue'
-import { createPinia } from 'pinia'
 import App from './App.vue'
-import router from './router'
 
-const app = createApp(App)
+createApp(App).mount('#app')
 
-app.use(createPinia())
-app.use(router)
-
-app.mount('#app')
+// El service worker solo se registra en producción (en desarrollo rompería el HMR).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).catch(() => {
+      // Sin service worker la app funciona igual, solo que no offline.
+    })
+  })
+}

@@ -3,11 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Keygen" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Generador minimalista de API keys seguras con longitud y caracteres personalizables."
+      content="Genera API keys y secretos seguros gratis, con longitud y caracteres personalizables. 100% en tu navegador: la clave nunca se envía a ningún servidor."
     />
+    <link rel="canonical" href="https://api-token-generator.netlify.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://api-token-generator.netlify.app/" />
+    <meta property="og:image" content="https://api-token-generator.netlify.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:site_name" content="Keygen" />
+    <meta property="og:title" content="Keygen · Generador de API keys seguras" />
+    <meta
+      property="og:description"
+      content="API keys criptográficamente seguras, generadas 100% en tu navegador."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#ffffff" />
     <script>
       ;(() => {
@@ -24,7 +43,21 @@
         }
       })()
     </script>
-    <title>API Key Generator X</title>
+    <title>Keygen · Generador de API keys seguras</title>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Keygen",
+        "url": "https://api-token-generator.netlify.app/",
+        "description": "Generador de API keys, secretos JWT, claves hex y UUID criptográficamente seguros. Funciona 100 % en el navegador.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cualquiera (navegador web)",
+        "inLanguage": "es",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

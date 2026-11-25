@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ApiKeyGenerator from '@/components/ApiKeyGenerator.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import KeyGuide from '@/components/KeyGuide.vue'
 </script>
 
 <template>
@@ -9,11 +10,12 @@ import AppHeader from '@/components/AppHeader.vue'
 
     <main>
       <ApiKeyGenerator />
+      <KeyGuide />
     </main>
 
     <footer>
-      <span>Generación local y segura.</span>
-      <span>Las claves nunca salen de tu navegador.</span>
+      ¿Necesitas un código QR?
+      <a href="https://qr-a.netlify.app/">Prueba QR Generator</a>
     </footer>
   </div>
 </template>
@@ -27,38 +29,24 @@ import AppHeader from '@/components/AppHeader.vue'
 
 main,
 footer {
-  width: min(960px, calc(100% - 40px));
+  width: min(760px, calc(100% - 32px));
   margin: 0 auto;
 }
 
 main {
   flex: 1;
-  padding: 28px 0 40px;
+  padding: 24px 0 48px;
 }
 
 footer {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
   padding: 24px 0 32px;
   color: var(--color-muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
+  text-align: center;
 }
 
-@media (max-width: 560px) {
-  main,
-  footer {
-    width: min(100% - 28px, 960px);
-  }
-
-  main {
-    padding: 18px 0 28px;
-  }
-
-  footer {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
-  }
+footer a {
+  color: var(--color-text);
+  text-underline-offset: 2px;
 }
 </style>
