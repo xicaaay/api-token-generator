@@ -6,10 +6,16 @@ Desarrollado con Vue 3 y TypeScript.
 
 ## Funcionalidades
 
-- Longitud configurable entre 8 y 128 caracteres.
-- Mayúsculas, minúsculas, números y símbolos, cada grupo activable por separado.
+- **Presets:** Personalizada, Estilo Stripe (`sk_live_…`), Hex 256 bits, Secreto JWT (512 bits Base64url), UUID v4 y Password de base de datos.
+- Formatos: caracteres, Hex, Base64url y UUID v4. Hex y Base64url admiten 128, 256 o 512 bits.
+- Longitud configurable entre 8 y 128 caracteres, con mayúsculas, minúsculas, números y símbolos activables por separado.
 - Cada grupo seleccionado aparece **al menos una vez** en la clave.
-- Indicador de fuerza con la entropía estimada en bits.
+- **Modo URL-safe:** los símbolos se limitan a `- _ . ~`, que no hay que escapar en URLs, `DATABASE_URL` ni archivos `.env`.
+- **Sin caracteres ambiguos:** quita `0 O 1 l I`.
+- **Prefijo personalizado** (`sk_live_`, `myapp_prod_`…), validado y sin contarlo como entropía.
+- **Generación en lote** de hasta 100 claves, con exportación a `.env`, JSON o CSV.
+- **Hash SHA-256** de la clave, para guardar en la base de datos solo el hash.
+- Indicador de fuerza con la **entropía exacta** en bits.
 - Mostrar u ocultar la clave, copiarla al portapapeles o descargarla como `.txt`.
 - Tema claro y oscuro (respeta la preferencia del sistema y no parpadea al cargar).
 - Diseño responsive.
@@ -20,9 +26,11 @@ La parte delicada de un generador de claves es la aleatoriedad. Este proyecto la
 
 - **Fuente de aleatoriedad:** `crypto.getRandomValues` (CSPRNG del navegador), nunca `Math.random`.
 - **Sin sesgo de módulo:** hacer `byte % 62` favorece a los primeros caracteres, porque 256 no es múltiplo de 62. Por eso se usa *rejection sampling*: se descartan los bytes por encima del mayor múltiplo válido y se vuelve a sortear.
-- **Garantía de grupos sin patrón predecible:** primero se toma un carácter de cada grupo seleccionado, luego se completa con el pool combinado y al final se mezcla todo con un **Fisher–Yates** que también usa el CSPRNG. Así los caracteres obligatorios no quedan siempre al inicio.
+- **Garantía de grupos sin sesgo:** la clave completa se sortea del pool combinado y, si le falta algún grupo seleccionado, se descarta y se vuelve a sortear. Así el resultado es uniforme entre todas las claves válidas y no hay posiciones "forzadas".
+- **Entropía exacta:** al exigir cada grupo, `longitud × log2(pool)` sobrestima la entropía. Por eso se cuentan las claves válidas por **inclusión–exclusión** (`Σ (−1)^|S| · (pool − |S|)^n`, con `BigInt`) y se reporta su `log2`. El prefijo no suma entropía.
+- **Exportación segura:** en `.env` los valores van entre comillas simples para que dotenv no interprete `$` como variable. En CSV se escapan comas y comillas.
 
-Los tests (`src/utils/__tests__/api-key.test.ts`) verifican la longitud, los caracteres permitidos, la presencia de cada grupo, la unicidad y la **uniformidad de la distribución con una prueba chi-cuadrado** sobre 200 000 muestras.
+Los tests (`src/utils/__tests__/`) verifican la longitud, los caracteres permitidos, la presencia de cada grupo, la unicidad, la **uniformidad con una prueba chi-cuadrado** sobre 200 000 muestras, el cálculo de entropía contra un conteo por fuerza bruta, cada formato y preset, el vector de prueba de SHA-256 y el escapado de cada exportación.
 
 ## Instalación
 
@@ -56,18 +64,16 @@ src/
 ├─ composables/useTheme.ts      # Tema claro/oscuro persistente
 ├─ types/api-key.ts
 ├─ utils/
-│  ├─ api-key.ts                # Generación segura
-│  └─ __tests__/api-key.test.ts
+│  ├─ api-key.ts                # Generación segura, presets y entropía
+│  ├─ export.ts                 # Exportación .env / JSON / CSV
+│  └─ __tests__/
 └─ views/HomeView.vue
 ```
 
 ## Roadmap
 
-- Presets: Hex, Base64url, UUID v4/v7, secreto JWT, estilo Stripe (`sk_live_…`).
-- Prefijo personalizado y separadores.
-- Modo URL-safe y opción para excluir caracteres ambiguos (`0/O`, `l/1/I`).
-- Generación en lote con exportación a `.env`, JSON o CSV.
-- Hash SHA-256 de la clave para guardarla en la base de datos.
+- CLI / paquete npm (`npx keygen --preset jwt`).
+- PWA para usarlo sin conexión.
 
 ## Privacidad
 
