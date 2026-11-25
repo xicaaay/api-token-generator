@@ -17,6 +17,8 @@ Desarrollado con Vue 3 y TypeScript.
 - **Hash SHA-256** de la clave, para guardar en la base de datos solo el hash.
 - Indicador de fuerza con la **entropía exacta** en bits.
 - Mostrar u ocultar la clave, copiarla al portapapeles o descargarla como `.txt`.
+- **PWA instalable y sin conexión:** manifest, íconos (incluido el maskable) y service worker. Usarla offline es la mejor prueba de que nada sale del navegador.
+- Guía de formatos y preguntas frecuentes, con datos estructurados (JSON-LD).
 - Tema claro y oscuro (respeta la preferencia del sistema y no parpadea al cargar).
 - Diseño responsive.
 
@@ -60,7 +62,8 @@ src/
 ├─ App.vue                      # Raíz: vista + notificaciones
 ├─ components/
 │  ├─ ApiKeyGenerator.vue       # Controles, resultado y acciones
-│  └─ AppHeader.vue             # Marca y cambio de tema
+│  ├─ AppHeader.vue             # Marca y cambio de tema
+│  └─ KeyGuide.vue              # Guía de formatos y preguntas frecuentes
 ├─ composables/useTheme.ts      # Tema claro/oscuro persistente
 ├─ types/api-key.ts
 ├─ utils/
@@ -68,12 +71,22 @@ src/
 │  ├─ export.ts                 # Exportación .env / JSON / CSV
 │  └─ __tests__/
 └─ views/HomeView.vue
+public/
+├─ manifest.webmanifest
+├─ sw.js                        # Service worker (uso sin conexión)
+└─ icons/                       # Íconos PWA 192, 512 y maskable
 ```
+
+## Sin conexión (PWA)
+
+El service worker se registra solo en producción (`import.meta.env.PROD`). Responde las navegaciones con red primero y, si no hay conexión, con el `index.html` guardado. Los archivos de `/assets/` llevan hash, así que se sirven desde caché. Si haces un cambio incompatible en la caché, sube `VERSION` en `public/sw.js`.
+
+En el hosting conviene servir `/sw.js` con `Cache-Control: no-cache` para que las actualizaciones lleguen enseguida.
 
 ## Roadmap
 
 - CLI / paquete npm (`npx keygen --preset jwt`).
-- PWA para usarlo sin conexión.
+- Imagen Open Graph y URL pública (pendiente del dominio).
 
 ## Privacidad
 

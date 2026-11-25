@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ApiKeyGenerator from '@/components/ApiKeyGenerator.vue'
 import AppHeader from '@/components/AppHeader.vue'
+import KeyGuide from '@/components/KeyGuide.vue'
 </script>
 
 <template>
@@ -9,6 +10,7 @@ import AppHeader from '@/components/AppHeader.vue'
 
     <main>
       <ApiKeyGenerator />
+      <KeyGuide />
     </main>
 
     <footer>
